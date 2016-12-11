@@ -37,15 +37,8 @@
 
     Instafeed.prototype.run = function(url) {
       var header, instanceName, script;
-      if (typeof this.options.clientId !== 'string') {
-        if (typeof this.options.accessToken !== 'string') {
-          throw new Error("Missing clientId or accessToken.");
-        }
-      }
-      if (typeof this.options.accessToken !== 'string') {
-        if (typeof this.options.clientId !== 'string') {
-          throw new Error("Missing clientId or accessToken.");
-        }
+      if (typeof this.options.feedId !== 'number') {
+        throw new Error("Missing feedId. Get it from bitsalad.co");
       }
       if ((this.options.before != null) && typeof this.options.before === 'function') {
         this.options.before.call(this);
@@ -65,6 +58,7 @@
 
     Instafeed.prototype.parse = function(response) {
       var anchor, childNodeCount, childNodeIndex, childNodesArr, e, eMsg, fragment, header, htmlString, httpProtocol, i, image, imageObj, imageString, imageUrl, images, img, imgHeight, imgOrient, imgUrl, imgWidth, instanceName, j, k, len, len1, len2, node, parsedLimit, reverse, sortSettings, targetEl, tmpEl;
+      response.data = response;
       if (typeof response !== 'object') {
         if ((this.options.error != null) && typeof this.options.error === 'function') {
           this.options.error.call(this, 'Invalid JSON data');
@@ -73,28 +67,16 @@
           throw new Error('Invalid JSON response');
         }
       }
-      if (response.meta.code !== 200) {
-        if ((this.options.error != null) && typeof this.options.error === 'function') {
-          this.options.error.call(this, response.meta.error_message);
-          return false;
-        } else {
-          throw new Error("Error from Instagram: " + response.meta.error_message);
-        }
-      }
       if (response.data.length === 0) {
         if ((this.options.error != null) && typeof this.options.error === 'function') {
-          this.options.error.call(this, 'No images were returned from Instagram');
+          this.options.error.call(this, 'No images were returned');
           return false;
         } else {
-          throw new Error('No images were returned from Instagram');
+          throw new Error('No images were returned from bitsalad.co');
         }
       }
       if ((this.options.success != null) && typeof this.options.success === 'function') {
         this.options.success.call(this, response);
-      }
-      this.context.nextUrl = '';
-      if (response.pagination != null) {
-        this.context.nextUrl = response.pagination.next_url;
       }
       if (this.options.sortBy !== 'none') {
         if (this.options.sortBy === 'random') {
@@ -237,44 +219,13 @@
     };
 
     Instafeed.prototype._buildUrl = function() {
-      var base, endpoint, final;
-      base = "https://api.instagram.com/v1";
-      switch (this.options.get) {
-        case "popular":
-          endpoint = "media/popular";
-          break;
-        case "tagged":
-          if (!this.options.tagName) {
-            throw new Error("No tag name specified. Use the 'tagName' option.");
-          }
-          endpoint = "tags/" + this.options.tagName + "/media/recent";
-          break;
-        case "location":
-          if (!this.options.locationId) {
-            throw new Error("No location specified. Use the 'locationId' option.");
-          }
-          endpoint = "locations/" + this.options.locationId + "/media/recent";
-          break;
-        case "user":
-          if (!this.options.userId) {
-            throw new Error("No user specified. Use the 'userId' option.");
-          }
-          endpoint = "users/" + this.options.userId + "/media/recent";
-          break;
-        default:
-          throw new Error("Invalid option for get: '" + this.options.get + "'.");
-      }
-      final = base + "/" + endpoint;
-      if (this.options.accessToken != null) {
-        final += "?access_token=" + this.options.accessToken;
-      } else {
-        final += "?client_id=" + this.options.clientId;
-      }
+      var base;
+      base = "https://api.bitsalad.co/v1/feeds/" + this.options.feedId + "?";
       if (this.options.limit != null) {
-        final += "&count=" + this.options.limit;
+        base += "count=" + this.options.limit + "&";
       }
-      final += "&callback=instafeedCache" + this.unique + ".parse";
-      return final;
+      base += "callback=instafeedCache" + this.unique + ".parse";
+      return base;
     };
 
     Instafeed.prototype._genKey = function() {

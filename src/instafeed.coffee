@@ -39,12 +39,8 @@ class Instafeed
   # MAKE IT GO!
   run: (url) ->
     # make sure either a client id or access token is set
-    if typeof @options.clientId isnt 'string'
-      unless typeof @options.accessToken is 'string'
-        throw new Error "Missing clientId or accessToken."
-    if typeof @options.accessToken isnt 'string'
-      unless typeof @options.clientId is 'string'
-        throw new Error "Missing clientId or accessToken."
+    if typeof @options.feedId isnt 'number'
+      throw new Error "Missing feedId. Get it from bitsalad.co"
 
     # run the before() callback, if one is set
     if @options.before? and typeof @options.before is 'function'
@@ -77,6 +73,8 @@ class Instafeed
 
   # Data parser (must be a json object)
   parse: (response) ->
+    response.data = response
+
     # throw an error if not an object
     if typeof response isnt 'object'
       # either throw an error or call the error callback
@@ -86,34 +84,18 @@ class Instafeed
       else
         throw new Error 'Invalid JSON response'
 
-    # check if the api returned an error code
-    if response.meta.code isnt 200
-      # either throw an error or call the error callback
-      if @options.error? and typeof @options.error is 'function'
-        @options.error.call(this, response.meta.error_message)
-        return false
-      else
-        throw new Error "Error from Instagram: #{response.meta.error_message}"
-
     # check if the returned data is empty
     if response.data.length is 0
       # either throw an error or call the error callback
       if @options.error? and typeof @options.error is 'function'
-        @options.error.call(this, 'No images were returned from Instagram')
+        @options.error.call(this, 'No images were returned')
         return false
       else
-        throw new Error 'No images were returned from Instagram'
+        throw new Error 'No images were returned from bitsalad.co'
 
     # call the success callback if no errors in response
     if @options.success? and typeof @options.success is 'function'
       @options.success.call(this, response)
-
-    # cache the pagination data, if it exists. Apply the value
-    # to the "context" object, which will be a true reference
-    # if this instance was created just for parsing
-    @context.nextUrl = ''
-    if response.pagination?
-      @context.nextUrl = response.pagination.next_url
 
     # before images are inserted into the DOM, check for sorting
     if @options.sortBy isnt 'none'
@@ -294,55 +276,17 @@ class Instafeed
   # function to inject into the document hearder
   _buildUrl: ->
     # set the base API URL
-    base = "https://api.instagram.com/v1"
-
-    # get the endpoint based on @options.get
-    switch @options.get
-      when "popular" then endpoint = "media/popular"
-      when "tagged"
-        # make sure a tag is defined
-        unless @options.tagName
-          throw new Error "No tag name specified. Use the 'tagName' option."
-
-        # set the endpoint
-        endpoint = "tags/#{@options.tagName}/media/recent"
-
-      when "location"
-        # make sure a location id is defined
-        unless @options.locationId
-          throw new Error "No location specified. Use the 'locationId' option."
-
-        # set the endpoint
-        endpoint = "locations/#{@options.locationId}/media/recent"
-
-      when "user"
-        # make sure there is a user id set
-        unless @options.userId
-          throw new Error "No user specified. Use the 'userId' option."
-
-        endpoint = "users/#{@options.userId}/media/recent"
-      # throw an error if any other option is given
-      else throw new Error "Invalid option for get: '#{@options.get}'."
-
-    # build the final url (uses the instance name)
-    final = "#{base}/#{endpoint}"
-
-    # use the access token for auth when it's available
-    # otherwise fall back to the client id
-    if @options.accessToken?
-      final += "?access_token=#{@options.accessToken}"
-    else
-      final += "?client_id=#{@options.clientId}"
+    base = "https://api.bitsalad.co/v1/feeds/#{@options.feedId}?"
 
     # add the count limit
     if @options.limit?
-      final += "&count=#{@options.limit}"
+      base += "count=#{@options.limit}&"
 
     # add the jsonp callback
-    final += "&callback=instafeedCache#{@unique}.parse"
+    base += "callback=instafeedCache#{@unique}.parse"
 
-    # return the final url
-    final
+    # return the url
+    base
 
   # helper function to generate a unique key
   _genKey: ->
