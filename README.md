@@ -1,5 +1,10 @@
 instafeed.js
 ============
+
+## This fork no longer works with [BitSalad.co](http://www.bitsalad.co).
+
+## Instead, have a go with [SaladSpinner](https://github.com/bitsalad/salad-spinner).
+
 Instafeed is a dead-simple way to add Instagram photos to your website. No jQuery required, just good 'ol plain javascript.
 
 ## Installation
